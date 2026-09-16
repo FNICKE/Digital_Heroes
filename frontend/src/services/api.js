@@ -1,7 +1,11 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL:
+    import.meta.env.VITE_API_URL ||
+    (import.meta.env.PROD
+      ? 'https://digital-heroes-38z1.onrender.com/api'
+      : 'https://digital-heroes-38z1.onrender.com/api'),
 });
 
 api.interceptors.request.use((config) => {
