@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Environment variables (Never commit secret env files)
+.env
+*.env
+.env.*
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.*
+!*.env.example
+!**/.env.example
+
+# Build artifacts
+dist/
+frontend/dist/
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# System & logs
+*.log
+.DS_Store
+.vercel
