@@ -26,37 +26,45 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 const app = express();
 
+const allowedOrigins = [
+  'https://digitalhero1.netlify.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+];
+
+if (process.env.CLIENT_URL) {
+  process.env.CLIENT_URL.split(',').forEach((url) => {
+    const trimmed = url.trim().replace(/\/$/, '');
+    if (trimmed && !allowedOrigins.includes(trimmed)) {
+      allowedOrigins.push(trimmed);
+    }
+  });
+}
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (mobile, curl, Postman) or any client
       if (!origin) return callback(null, true);
-      const clientUrl = process.env.CLIENT_URL;
-      if (clientUrl) {
-        const allowed = clientUrl.split(',').map((s) => s.trim().replace(/\/$/, ''));
-        if (allowed.includes(origin) || allowed.includes('*')) {
-          return callback(null, true);
-        }
-      }
-      // Allow netlify, vercel, render, and localhost domains automatically
+      const cleanOrigin = origin.replace(/\/$/, '');
       if (
-        origin.includes('netlify.app') ||
-        origin.includes('vercel.app') ||
-        origin.includes('onrender.com') ||
-        origin.includes('localhost') ||
-        origin.includes('127.0.0.1')
+        allowedOrigins.includes(cleanOrigin) ||
+        cleanOrigin.endsWith('.netlify.app') ||
+        cleanOrigin.endsWith('.vercel.app') ||
+        cleanOrigin.includes('localhost') ||
+        cleanOrigin.includes('127.0.0.1')
       ) {
         return callback(null, true);
       }
-      // Default to permissive for evaluators
+      // Fallback: reflect origin to prevent blocking
       return callback(null, true);
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'stripe-signature'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   })
 );
-app.options('*', cors());
+
 app.use(morgan('dev'));
 
 // Stripe webhook needs raw body
