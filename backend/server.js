@@ -26,9 +26,10 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 const app = express();
 
+const clientUrl = process.env.CLIENT_URL;
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: clientUrl ? (clientUrl.includes(',') ? clientUrl.split(',').map((s) => s.trim()) : clientUrl) : true,
     credentials: true,
   })
 );
@@ -62,8 +63,27 @@ app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(uploadsDir));
 
+// Serve frontend build if present
+const frontendDist = path.join(__dirname, '../frontend/dist');
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+}
+
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, service: 'digital-heroes-api' });
+  res.json({ ok: true, service: 'digital-heroes-api', timestamp: new Date().toISOString() });
+});
+
+app.get('/', (req, res) => {
+  if (fs.existsSync(frontendDist)) {
+    return res.sendFile(path.join(frontendDist, 'index.html'));
+  }
+  res.json({
+    service: 'digital-heroes-api',
+    status: 'online',
+    health: '/api/health',
+    version: '1.0.0',
+    documentation: 'See README.md for API documentation',
+  });
 });
 
 app.use('/api/auth', authRoutes);
@@ -81,6 +101,13 @@ app.use('/api/admin', adminRoutes);
 
 // Convenience: POST /api/donations → charity routes donations
 app.post('/api/donations', require('./src/middleware/auth'), require('./src/controllers/charityController').createDonation);
+
+// SPA client routing fallback (non-API paths)
+if (fs.existsSync(frontendDist)) {
+  app.get(/^(?!\/api).+/, (req, res) => {
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+}
 
 app.use(errorHandler);
 

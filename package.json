@@ -4,6 +4,8 @@
   "version": "1.0.0",
   "description": "Digital Heroes — MERN subscription, draws, and charity app",
   "scripts": {
+    "start": "node backend/server.js",
+    "build": "npm run build --prefix frontend",
     "backend": "npm run dev --prefix backend",
     "frontend": "npm run dev --prefix frontend",
     "seed": "npm run seed --prefix backend",
